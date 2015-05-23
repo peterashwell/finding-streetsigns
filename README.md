@@ -1,6 +1,7 @@
 - [X] get output from SIFT object descriptors
 - [X] fiddle with the knn scores to try and get intelligent results
-- [ ] try on other images
-- [ ] try using SURF instead
+- [X] try on other images
+- [ ] try with tweaked crawler images (higher res etc)
 - [ ] write code to bound box the parking signs
 - [ ] bootstrap training set
+- [ ] run on large scale crawled images

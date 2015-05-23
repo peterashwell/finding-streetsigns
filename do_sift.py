@@ -1,23 +1,24 @@
 import numpy as np
 import cv2
 
-MIN_MATCH_COUNT = 5
+MIN_MATCH_COUNT = 3
 # Lower - more specifity for matches
 THRESHOLD = 0.5
 
 SIGNS_PATH = 'parking-signs/cutout-png'
-STOP_SIGN_NAME = 'no-parking_parking.png'
+STOP_SIGN_NAME = 'no-stopping-big.png'
 
 UNLABELED_PATH = 'images'
-QUERY_IMAGE_NAME= (
-    'streetview?'
-    'size=600x600&'
-    'fov=40&'
-    'latitude=-33.879288&'
-    'longitude=151.21525700000007&'
-    'pano=_FpV9YGxjDdfOfJRHFDOPA&'
-    'heading=90'
-)
+QUERY_IMAGE_NAME = 'noparking-hires.png'
+#QUERY_IMAGE_NAME= (
+#    'streetview?'
+#    'size=600x600&'
+#    'fov=40&'
+#    'latitude=-33.879288&'
+#    'longitude=151.21525700000007&'
+#    'pano=_FpV9YGxjDdfOfJRHFDOPA&'
+#    'heading=90'
+#)
 #QUERY_IMAGE_NAME = (
 #    'streetview?'
 #    'size=600x600&'
@@ -29,6 +30,7 @@ QUERY_IMAGE_NAME= (
 
 img1 = cv2.imread('{0}/{1}'.format(UNLABELED_PATH, QUERY_IMAGE_NAME), 0)
 trainpath = '{0}/{1}'.format(SIGNS_PATH, STOP_SIGN_NAME)
+print "reading:", trainpath
 img2 = cv2.imread(trainpath, 0)
 
 
