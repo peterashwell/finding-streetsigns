@@ -1,7 +1,7 @@
 import numpy as np
 import cv2
 
-MIN_MATCH_COUNT = 10
+MIN_MATCH_COUNT = 5
 # Lower - more specifity for matches
 THRESHOLD = 0.5
 
@@ -9,14 +9,23 @@ SIGNS_PATH = 'parking-signs/cutout-png'
 STOP_SIGN_NAME = 'no-parking_parking.png'
 
 UNLABELED_PATH = 'images'
-QUERY_IMAGE_NAME = (
+QUERY_IMAGE_NAME= (
     'streetview?'
     'size=600x600&'
     'fov=40&'
-    'latitude=-33.87944&'
-    'longitude=151.21516199999996&'
-    'pano=777nlXlYzEc0hr3HDV9Z9w&heading=150'
+    'latitude=-33.879288&'
+    'longitude=151.21525700000007&'
+    'pano=_FpV9YGxjDdfOfJRHFDOPA&'
+    'heading=90'
 )
+#QUERY_IMAGE_NAME = (
+#    'streetview?'
+#    'size=600x600&'
+#    'fov=40&'
+#    'latitude=-33.87944&'
+#    'longitude=151.21516199999996&'
+#    'pano=777nlXlYzEc0hr3HDV9Z9w&heading=150'
+#)
 
 img1 = cv2.imread('{0}/{1}'.format(UNLABELED_PATH, QUERY_IMAGE_NAME), 0)
 trainpath = '{0}/{1}'.format(SIGNS_PATH, STOP_SIGN_NAME)
