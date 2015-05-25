@@ -13,8 +13,8 @@ query_path = sys.argv[2]
 training_images = os.listdir(training_path)
 query_images = os.listdir(query_path)
 
-one_train_image = training_images[0]
-one_query_image = query_images[0]
+one_train_image = training_images[2]
+one_query_image = query_images[13]
 
 img1 = cv2.imread(
     os.path.join(query_path, one_query_image), 0
