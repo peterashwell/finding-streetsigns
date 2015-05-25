@@ -3,6 +3,8 @@ import numpy as np
 import os
 import sys
 
+from sift_wrapper import SiftWrapper
+
 MIN_MATCH_COUNT = 3
 # Lower - more specifity for matches
 THRESHOLD = 0.5
@@ -23,30 +25,17 @@ img2 = cv2.imread(
     os.path.join(training_path, one_train_image), 0
 )
 
-# Initiate SIFT detector
-sift = cv2.SIFT()
+sw = SiftWrapper()
 
-# find the keypoints and descriptors with SIFT
-kp1, des1 = sift.detectAndCompute(img1, None)
-kp2, des2 = sift.detectAndCompute(img2, None)
+sift_img1 = sw.do_sift(img1)
+sift_img2 = sw.do_sift(img2)
 
-FLANN_INDEX_KDTREE = 0
-index_params = dict(algorithm=FLANN_INDEX_KDTREE, trees=5)
-search_params = dict(checks=50)
+knn_result = sw.do_knn_sift(sift_img1, sift_img2)
 
-flann = cv2.FlannBasedMatcher(index_params, search_params)
-
-matches = flann.knnMatch(des1, des2, k=2)
-
-# store all the good matches as per Lowe's ratio test.
-good = []
-for m, n in matches:
-    if m.distance < THRESHOLD *n.distance:
-        good.append(m)
-
-if len(good) > MIN_MATCH_COUNT:
-    src_pts = np.float32([kp1[m.queryIdx].pt for m in good]).reshape(-1, 1, 2)
-    dst_pts = np.float32([kp2[m.trainIdx].pt for m in good]).reshape(-1, 1, 2)
+if knn_result.num_found > MIN_MATCH_COUNT:
+    print knn_result.source_points
+    src_pts = np.float32(knn_result.source_points).reshape(-1, 1, 2)
+    dst_pts = np.float32(knn_result.destination_points).reshape(-1, 1, 2)
 
     M, mask = cv2.findHomography(src_pts, dst_pts, cv2.RANSAC, 5.0)
     matchesMask = mask.ravel().tolist()
