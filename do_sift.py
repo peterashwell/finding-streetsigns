@@ -1,39 +1,27 @@
-import numpy as np
 import cv2
+import numpy as np
+import os
+import sys
 
 MIN_MATCH_COUNT = 3
 # Lower - more specifity for matches
 THRESHOLD = 0.5
 
-SIGNS_PATH = 'parking-signs/cutout-png'
-STOP_SIGN_NAME = 'no-stopping-big.png'
+training_path = sys.argv[1]
+query_path = sys.argv[2]
 
-UNLABELED_PATH = 'images'
-QUERY_IMAGE_NAME = 'noparking-hires.png'
-#QUERY_IMAGE_NAME= (
-#    'streetview?'
-#    'size=600x600&'
-#    'fov=40&'
-#    'latitude=-33.879288&'
-#    'longitude=151.21525700000007&'
-#    'pano=_FpV9YGxjDdfOfJRHFDOPA&'
-#    'heading=90'
-#)
-#QUERY_IMAGE_NAME = (
-#    'streetview?'
-#    'size=600x600&'
-#    'fov=40&'
-#    'latitude=-33.87944&'
-#    'longitude=151.21516199999996&'
-#    'pano=777nlXlYzEc0hr3HDV9Z9w&heading=150'
-#)
+training_images = os.listdir(training_path)
+query_images = os.listdir(query_path)
 
-img1 = cv2.imread('{0}/{1}'.format(UNLABELED_PATH, QUERY_IMAGE_NAME), 0)
-trainpath = '{0}/{1}'.format(SIGNS_PATH, STOP_SIGN_NAME)
-print "reading:", trainpath
-img2 = cv2.imread(trainpath, 0)
+one_train_image = training_images[0]
+one_query_image = query_images[0]
 
-
+img1 = cv2.imread(
+    os.path.join(query_path, one_query_image), 0
+)
+img2 = cv2.imread(
+    os.path.join(training_path, one_train_image), 0
+)
 
 # Initiate SIFT detector
 sift = cv2.SIFT()
@@ -70,11 +58,11 @@ if len(good) > MIN_MATCH_COUNT:
     #img2 = cv2.polylines(img2,[np.int32(dst)],True,255,3)
 
     for src_pt in src_pts:
-        print "src_pt:", src_pt
+        print("src_pt:", src_pt)
         cv2.circle(img1, tuple(src_pt[0]), 5, (255, 255, 255), -1)
 
     for dst_pt in dst_pts:
-        print "dst_pt:", dst_pt
+        print("dst_pt:", dst_pt)
         cv2.circle(img2, tuple(dst_pt[0]), 5, (255, 255, 255), -1);
 
 else:
@@ -88,9 +76,9 @@ draw_params = dict(matchColor = (0,255,0), # draw matches in green color
                    flags = 2)
 
 #img3 = cv2.drawMatches(img1,kp1,img2,kp2,good,None,**draw_params)
-print "writing 1"
+print("writing 1")
 cv2.imwrite('queryout.png', img1)
-print "writing 2"
+print("writing 2")
 cv2.imwrite('trainout.png', img2)
 
 #plt.imshow(img3, 'gray'),plt.show()
