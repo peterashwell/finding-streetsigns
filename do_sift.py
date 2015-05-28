@@ -20,6 +20,11 @@ one_query_image = query_images[13]
 
 sw = SiftWrapper()
 
+training_map = {}
+for train_fname in training_images:
+    image = cv2.imread(os.path.join(training_path, train_fname), 0)
+    training_map[train_fname] = sw.do_sift(image)
+
 for qnum, query_fname in enumerate(query_images):
     print "reading {0}".format(query_fname)
     training_hits = 0
@@ -29,12 +34,8 @@ for qnum, query_fname in enumerate(query_images):
     output_image = np.copy(query_image)
 
     sift_query = sw.do_sift(query_image)
-    for train_fname in training_images:
-        train_image = cv2.imread(
-            os.path.join(training_path, train_fname), 0
-        )
-
-        sift_train = sw.do_sift(train_image)
+    for train_fname in training_map.keys():
+        sift_train = training_map[train_fname]
 
         knn_result = sw.do_knn_sift(sift_train, sift_query)
 
@@ -52,5 +53,6 @@ for qnum, query_fname in enumerate(query_images):
                 )
     if training_hits > 0:
         # Write each query image out with markers from training images
-        output_path = os.path.join('results', 'riley', '{0}_query.png'.format(qnum))
+        # NOTE query_fname includes .jpg extension
+        output_path = os.path.join('results', 'riley', '{0}'.format(query_fname))
         cv2.imwrite(output_path, output_image)
