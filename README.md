@@ -1,9 +1,10 @@
-- [X] get output from SIFT object descriptors
-- [X] fiddle with the knn scores to try and get intelligent results
-- [X] try on other images
+- [x] get output from SIFT object descriptors
+- [x] fiddle with the knn scores to try and get intelligent results
+- [x] try on other images
 - [x] improve training set to have types of signs + sources
 - [x] run SIFT on training set and see how it goes
-- [ ] build a new training set of 'has signs' and 'not signs'
+- [x] build a new training set of 'has signs' and 'not signs'
+- [x] deal with openCV headaches
 - [ ] try Lab a channel rather than rgb grayscale for no stopping
 - [ ] write code to bound box the parking signs
 - [ ] speed up classification
@@ -27,6 +28,13 @@ Build a new training set of 'has signs' and 'not signs' from riley
 - construct complement set of images without signs 
 - re-run object recognition on that set and get precision, recall 
 - summarise error cases
+
+Deal with OpenCV headaches
+==========================
+- In OpenCV 3 SIFT was moved out of the core repos. Tried to install and failed
+- Falling back to OpenCV 2.4, following
+  http://stackoverflow.com/questions/18561910/opencv-python-cant-use-surf-sift
+  for how to use in python
 
 Try Lab 'a' channel rather than rgb grayscale for no stopping signs
 ==================================================
