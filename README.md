@@ -3,9 +3,11 @@
 - [X] try on other images
 - [x] improve training set to have types of signs + sources
 - [x] run SIFT on training set and see how it goes
+- [ ] build a new training set of 'has signs' and 'not signs'
 - [ ] try Lab a channel rather than rgb grayscale for no stopping
 - [ ] write code to bound box the parking signs
 - [ ] speed up classification
+- [ ] extract sign location and orientation using angular size
 - [ ] try to bootstrap training set / get first plotted result
 
 Improve training set to have types of signs + sources
@@ -19,10 +21,15 @@ Run SIFT on training set and see how it goes
 - Start applying to riley st set with bounding boxes
 - Review results
 
+Build a new training set of 'has signs' and 'not signs' from riley
+==================================================================
+- find all images that have signs from riley
+- construct complement set of images without signs 
+- re-run object recognition on that set and get precision, recall 
+- summarise error cases
+
 Try Lab 'a' channel rather than rgb grayscale for no stopping signs
 ==================================================
-- Create training set of no stopping signs from riley set
-- The bright, red backgrounded no stopping signs don't get many hits
 - Try running with Lab conversion that had good results in ImageJ
 - Convert to Lab, extract a, and inspect results on riley-nostopping
 - Modify code to report negatives and get false negative rate
@@ -33,6 +40,12 @@ Write code to bound box the parking signs
 - Map homography region onto query image
 - Extract approximate location using angular size
 - Extract facing using skew and aspect of image
+
+Extract sign location and orientation using angular size
+========================================================
+- Using a the width of the sign, the heading of the image, the fov size can
+  find the exact distance to the sign
+- Should be able to use the homography to find the facing of the sign
 
 Try to bootstrap training set / get first plotted result
 ========================================================
