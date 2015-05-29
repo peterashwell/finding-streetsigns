@@ -42,18 +42,30 @@ print("fn:", len(false_negatives))
 
 tp_folder = os.path.join(results_folder, 'tp')
 fp_folder = os.path.join(results_folder, 'fp')
+fn_folder = os.path.join(results_folder, 'fn')
 
 for filename in true_positives:
     tp_in_path = os.path.join(labelled_as_has_signs_folder, filename)
     tp_out_path = os.path.join(tp_folder, filename)
-    shutil.copyfile(tp_in_path, tp_out_path)
+    if os.path.exists(tp_in_path):
+        shutil.copyfile(tp_in_path, tp_out_path)
+    else:
+        print("failed to find true positive image:", tp_in_path)
 
 for filename in false_positives:
     fp_in_path = os.path.join(labelled_as_has_signs_folder, filename)
     fp_out_path = os.path.join(fp_folder, filename)
-    shutil.copyfile(fp_in_path, fp_out_path)
+    if os.path.exists(fp_in_path):
+        shutil.copyfile(fp_in_path, fp_out_path)
+    else:
+        print("failed to find false positive image:", fp_in_path)
 
+# NOTE these don't have lebels... because they are negatives
+# Source image from the training set - has signs
 for filename in false_negatives:
-    fn_in_path = os.path.join(labelled_as_has_signs_folder, filename)
+    fn_in_path = os.path.join(has_signs_folder, filename)
     fn_out_path = os.path.join(fn_folder, filename)
-    shutil.copyfile(fn_in_path, fn_out_path)
+    if os.path.exists(fn_in_path):
+        shutil.copyfile(fn_in_path, fn_out_path)
+    else:
+        print("failed to find false negative image:", fn_in_path)
