@@ -38,13 +38,6 @@ def open_hsv_image(path):
     s = hsv_image[:, :, 1]
     v = hsv_image[:, :, 2]
 
-    print('hmin:', np.min(hsv_image[:, :, 0]))
-    print('hmax:', np.max(hsv_image[:, :, 0]))
-    print('smin:', np.min(hsv_image[:, :, 1]))
-    print('smax:', np.max(hsv_image[:, :, 1]))
-    print('bmin:', np.min(hsv_image[:, :, 2]))
-    print('bmax:', np.max(hsv_image[:, :, 2]))
-
     return HsvImage(h=h, s=s, v=v)
 
 if __name__ == '__main__':
