@@ -11,8 +11,9 @@
 - [x] Try edge features to improve recall
 - [ ] Tier results set to be less result e.g. remove distant / unreadable
 - [x] write code to bound box the parking signs
+- [ ] remove 'both' signs from training set (split)
 - [ ] try template matching to find sign boundaries
-- [ ] extract sign location and orientation using angular size
+- [ ] extract sign location and orientation using angular size and transform
 - [ ] try to bootstrap training set / get first plotted result
 
 Improve training set to have types of signs + sources
@@ -74,7 +75,8 @@ Try edge features to improve recall
 - Perhaps by writing edge\_loader
 - RESULT: This was shit. I don't think SIFT features like the extremeness
   of edges. Probably because they are based on gaussians
-- Try again with canny edge detection as a feature in the future
+- Try again with canny edge detection as a feature in the future, combined with
+  template matching
 
 Write code to bound box the parking signs
 -----------------------------------------
