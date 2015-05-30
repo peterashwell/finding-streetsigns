@@ -5,11 +5,11 @@ import imread
 from collections import namedtuple
 
 LabImage = namedtuple('LabImage', ['l', 'a', 'b'])
+HsvImage = namedtuple('HsvImage', ['h', 's', 'v'])
 
 
 def open_lab_image(path):
     # The 1 tells openCV imread to get rgb channels
-    CV_LOAD_IMAGE_COLOR = 1
     rgb = imread.imread(path)
     lab_image = color.rgb2lab(rgb)
 
@@ -26,8 +26,34 @@ def open_lab_image(path):
         b=lab_8bit[:, :, 2]
     )
 
+
+def open_hsv_image(path):
+    rgb = imread.imread(path)
+    hsv_image = color.rgb2hsv(rgb)
+
+    hsv_image *= 255
+    hsv_image = hsv_image.astype(np.uint8)
+
+    h = hsv_image[:, :, 0]
+    s = hsv_image[:, :, 1]
+    v = hsv_image[:, :, 2]
+
+    print('hmin:', np.min(hsv_image[:, :, 0]))
+    print('hmax:', np.max(hsv_image[:, :, 0]))
+    print('smin:', np.min(hsv_image[:, :, 1]))
+    print('smax:', np.max(hsv_image[:, :, 1]))
+    print('bmin:', np.min(hsv_image[:, :, 2]))
+    print('bmax:', np.max(hsv_image[:, :, 2]))
+
+    return HsvImage(h=h, s=s, v=v)
+
 if __name__ == '__main__':
-    lab = open_lab_image('/home/peter/streetview/tmp/hsb_test.jpg')
-    cv2.imwrite('test_l.jpg', lab.l)
-    cv2.imwrite('test_a.jpg', lab.a)
-    cv2.imwrite('test_b.jpg', lab.b)
+    hsv = open_hsv_image('/home/peter/streetview/tmp/hsb_test.jpg')
+    imread.imsave('test_h.jpg', hsv.h)
+    imread.imsave('test_s.jpg', hsv.s)
+    imread.imsave('test_v.jpg', hsv.v)
+
+    # lab = open_lab_image('/home/peter/streetview/tmp/hsb_test.jpg')
+    # imread.imsave('test_l.jpg', lab.l)
+    # imread.imsave('test_a.jpg', lab.a)
+    # imread.imsave('test_b.jpg', lab.b)
