@@ -1,6 +1,6 @@
-import cv2
 from skimage import color
 import numpy as np
+import imread
 
 from collections import namedtuple
 
@@ -9,8 +9,8 @@ LabImage = namedtuple('LabImage', ['l', 'a', 'b'])
 
 def open_lab_image(path):
     # The 1 tells openCV imread to get rgb channels
-    LOAD_RGB_IMAGE = 1
-    rgb = cv2.imread(path, LOAD_RGB_IMAGE)
+    CV_LOAD_IMAGE_COLOR = 1
+    rgb = imread.imread(path)
     lab_image = color.rgb2lab(rgb)
 
     # NOTE the maximum values of l, a, b are 100, +/- 128, +/- 128
