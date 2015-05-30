@@ -1,11 +1,18 @@
 from skimage import color
 import numpy as np
 import imread
+import cv2
 
 from collections import namedtuple
 
 LabImage = namedtuple('LabImage', ['l', 'a', 'b'])
 HsvImage = namedtuple('HsvImage', ['h', 's', 'v'])
+
+
+def open_grayscale_image(path):
+    CV2_AS_GRAYSCALE = 0
+    image = cv2.imread(path, CV2_AS_GRAYSCALE)
+    return image
 
 
 def open_lab_image(path):
