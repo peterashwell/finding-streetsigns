@@ -46,7 +46,7 @@ class SiftWrapper:
 
         # Find matches along knn chain within threshold
         matches = self.flann.knnMatch(
-            train.descriptors, query.descriptors, k=2
+            train.descriptors, query.descriptors, k=self.KNN_MATCH_AMOUNT
         )
         for pair in matches:
             a, b = pair
