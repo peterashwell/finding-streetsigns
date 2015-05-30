@@ -8,8 +8,8 @@
 - [x] try Lab a channel rather than rgb grayscale for no stopping
 - [x] speed up classification with multiprocessing
 - [x] Try SURF features to improve recall
+- [x] Try edge features to improve recall
 - [ ] Tier results set to be less result e.g. remove distant / unreadable
-- [ ] Try edge features to improve recall
 - [ ] write code to bound box the parking signs
 - [ ] extract sign location and orientation using angular size
 - [ ] try to bootstrap training set / get first plotted result
@@ -71,6 +71,9 @@ Try edge features to improve recall
 -----------------------------------
 - Do sobel edge extraction then apply SIFT 
 - Perhaps by writing edge\_loader
+- RESULT: This was shit. I don't think SIFT features like the extremeness
+  of edges. Probably because they are based on gaussians
+- Try again with canny edge detection as a feature in the future
 
 Write code to bound box the parking signs
 -----------------------------------------
