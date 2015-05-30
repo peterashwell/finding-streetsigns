@@ -10,7 +10,8 @@
 - [x] Try SURF features to improve recall
 - [x] Try edge features to improve recall
 - [ ] Tier results set to be less result e.g. remove distant / unreadable
-- [ ] write code to bound box the parking signs
+- [x] write code to bound box the parking signs
+- [ ] try template matching to find sign boundaries
 - [ ] extract sign location and orientation using angular size
 - [ ] try to bootstrap training set / get first plotted result
 
@@ -81,6 +82,8 @@ Write code to bound box the parking signs
 - Map homography region onto query image
 - Extract approximate location using angular size
 - Extract facing using skew and aspect of image
+- RESULT: Poor. Manual extraction of sign boundaries may be something I need to
+  consider. Could also consider attempting template matching from the start
 
 Extract sign location and orientation using angular size
 --------------------------------------------------------
