@@ -8,7 +8,7 @@ import os
 import sys
 
 from sift_wrapper import SiftWrapper
-from loaders import open_lab_image
+from loaders import open_hsv_image
 
 MIN_MATCH_COUNT = 3
 # Lower - more specifity for matches
@@ -29,7 +29,7 @@ sw = SiftWrapper()
 training_map = {}
 for train_fname in training_images:
     image_path = os.path.join(TRAINING_PATH, train_fname)
-    image = open_lab_image(image_path).l
+    image = open_hsv_image(image_path).s
     training_map[train_fname] = sw.do_sift(image)
 
 for qnum, query_fname in enumerate(query_images):
@@ -37,7 +37,7 @@ for qnum, query_fname in enumerate(query_images):
     training_hits = 0
     query_image_path = os.path.join(QUERY_PATH, query_fname)
     # Get 'a' component of lab image
-    query_image = open_lab_image(query_image_path).l
+    query_image = open_hsv_image(query_image_path).s
     output_image = np.copy(query_image)
 
     sift_query = sw.do_sift(query_image)
