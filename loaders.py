@@ -1,3 +1,4 @@
+from scipy import ndimage
 from skimage import color
 import numpy as np
 import imread
@@ -13,6 +14,23 @@ def open_grayscale_image(path):
     CV2_AS_GRAYSCALE = 0
     image = cv2.imread(path, CV2_AS_GRAYSCALE)
     return image
+
+
+def open_edge_image(path):
+    gray = open_grayscale_image(path)
+    gray = gray.astype(np.int32)
+
+    # Compute acceleration across image to get edges
+    sx = ndimage.sobel(gray, axis=0, mode='constant')
+    sy = ndimage.sobel(gray, axis=1, mode='constant')
+    sob = np.hypot(sx, sy)
+    sob = sob / np.max(sob) * 255.0
+
+    # Threshold the edges to make them clean
+    et = 25
+    sob[sob >= et] = 255
+    sob[sob < et] = 0
+    return sob.astype(np.uint8)
 
 
 def open_lab_image(path):
@@ -48,10 +66,13 @@ def open_hsv_image(path):
     return HsvImage(h=h, s=s, v=v)
 
 if __name__ == '__main__':
-    hsv = open_hsv_image('/home/peter/streetview/tmp/hsb_test.jpg')
-    imread.imsave('test_h.jpg', hsv.h)
-    imread.imsave('test_s.jpg', hsv.s)
-    imread.imsave('test_v.jpg', hsv.v)
+    edges = open_edge_image('/home/peter/streetview/tmp/hsb_test.jpg')
+    imread.imsave('test_edges.jpg', edges)
+
+    # hsv = open_hsv_image('/home/peter/streetview/tmp/hsb_test.jpg')
+    # imread.imsave('test_h.jpg', hsv.h)
+    # imread.imsave('test_s.jpg', hsv.s)
+    # imread.imsave('test_v.jpg', hsv.v)
 
     # lab = open_lab_image('/home/peter/streetview/tmp/hsb_test.jpg')
     # imread.imsave('test_l.jpg', lab.l)
