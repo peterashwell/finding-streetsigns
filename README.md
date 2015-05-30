@@ -6,8 +6,8 @@
 - [x] build a new training set of 'has signs' and 'not signs'
 - [x] deal with openCV headaches
 - [ ] try Lab a channel rather than rgb grayscale for no stopping
+- [ ] speed up classification with multiprocessing
 - [ ] write code to bound box the parking signs
-- [ ] speed up classification
 - [ ] extract sign location and orientation using angular size
 - [ ] try to bootstrap training set / get first plotted result
 
@@ -41,6 +41,11 @@ Try Lab 'a' channel rather than rgb grayscale for no stopping signs
 - Try running with Lab conversion that had good results in ImageJ
 - Convert to Lab, extract a, and inspect results on riley-nostopping
 - Modify code to report negatives and get false negative rate
+
+Speed up the classification process
+===================================
+- Use subprocess to spin off processes, each one lodaing the training set
+- See if this has any problems with thrashing the disk. Shouldn't do
 
 Write code to bound box the parking signs
 =========================================
