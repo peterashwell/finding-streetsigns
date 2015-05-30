@@ -2,9 +2,14 @@
 # Takes as argument the training folder and results_folder
 # Outputs to results path tp, tn, fp, fn folders
 
+# We are using a python3 linter, and we probably should be
+# Main reason for python2 is OpenCV shittiness
+from __future__ import print_function
+
 import os
 import shutil
 import sys
+
 
 if len(sys.argv) != 3:
     print("usage: python evaluate.py <training_folder> <results_folder>")

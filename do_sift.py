@@ -1,3 +1,7 @@
+# We are using python2 because OpenCV compatibility for python3 sucks
+# Continue using a python3 linter however, so fix print statements
+from __future__ import print_function
+
 import cv2
 import numpy as np
 import os
@@ -26,7 +30,7 @@ for train_fname in training_images:
     training_map[train_fname] = sw.do_sift(image)
 
 for qnum, query_fname in enumerate(query_images):
-    print "reading {0}".format(query_fname)
+    print("reading {0}".format(query_fname))
     training_hits = 0
     query_image = cv2.imread(
         os.path.join(query_path, query_fname), 0
@@ -41,7 +45,7 @@ for qnum, query_fname in enumerate(query_images):
 
         if knn_result.num_found > MIN_MATCH_COUNT:
             training_hits += 1
-            print "matched: {0}".format(train_fname)
+            print("matched: {0}".format(train_fname))
             src_pts = np.float32(knn_result.source_points).reshape(-1, 1, 2)
             dst_pts = np.float32(knn_result.destination_points).reshape(
                 -1, 1, 2
