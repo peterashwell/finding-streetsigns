@@ -8,6 +8,7 @@ import os
 import sys
 
 from sift_wrapper import SiftWrapper
+from loaders import open_lab_image
 
 MIN_MATCH_COUNT = 3
 # Lower - more specifity for matches
@@ -32,9 +33,9 @@ for train_fname in training_images:
 for qnum, query_fname in enumerate(query_images):
     print("reading {0}".format(query_fname))
     training_hits = 0
-    query_image = cv2.imread(
-        os.path.join(query_path, query_fname), 0
-    )
+    query_image_path = os.path.join(query_path, query_fname)
+    # Get 'a' component of lab image
+    query_image = open_lab_image(query_image_path).a
     output_image = np.copy(query_image)
 
     sift_query = sw.do_sift(query_image)
@@ -58,5 +59,5 @@ for qnum, query_fname in enumerate(query_images):
     if training_hits > 0:
         # Write each query image out with markers from training images
         # NOTE query_fname includes .jpg extension
-        output_path = os.path.join('results', 'riley', '{0}'.format(query_fname))
+        output_path = os.path.join('results', 'riley', query_fname)
         cv2.imwrite(output_path, output_image)
