@@ -12,16 +12,18 @@ class SurfWrapper:
     FLANN_INDEX_KDTREE = 0
 
     # Number of points to find in matching
-    HESSIAN = 400
+    HESSIAN = 200
 
     # K to use in Knn
     KNN_MATCH_AMOUNT = 2
-    KNN_DISTANCE_THRESHOLD = 0.5
+    KNN_DISTANCE_THRESHOLD = 0.6
 
     def __init__(self):
         self.surf = cv2.SURF(self.HESSIAN)
         # Set descriptor size to 128-dim
         self.surf.extended = True
+        # Do not make rotation invariant
+        self.surf.upright = True
         self.flann = cv2.FlannBasedMatcher(
             dict(algorithm=self.FLANN_INDEX_KDTREE, trees=5), dict(checks=50)
         )
