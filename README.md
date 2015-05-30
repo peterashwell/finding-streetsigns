@@ -5,8 +5,11 @@
 - [x] run SIFT on training set and see how it goes
 - [x] build a new training set of 'has signs' and 'not signs'
 - [x] deal with openCV headaches
-- [ ] try Lab a channel rather than rgb grayscale for no stopping
-- [ ] speed up classification with multiprocessing
+- [x] try Lab a channel rather than rgb grayscale for no stopping
+- [x] speed up classification with multiprocessing
+- [x] Try SURF features to improve recall
+- [ ] Tier results set to be less result e.g. remove distant / unreadable
+- [ ] Try edge features to improve recall
 - [ ] write code to bound box the parking signs
 - [ ] extract sign location and orientation using angular size
 - [ ] try to bootstrap training set / get first plotted result
@@ -41,11 +44,33 @@ Try Lab 'a' channel rather than rgb grayscale for no stopping signs
 - Try running with Lab conversion that had good results in ImageJ
 - Convert to Lab, extract a, and inspect results on riley-nostopping
 - Modify code to report negatives and get false negative rate
+- RESULT: Not that great. Sticking with grayscale for now 
+- HSV saturation space may have improved no stopping results
 
 Speed up the classification process
 -----------------------------------
 - Use subprocess to spin off processes, each one lodaing the training set
 - See if this has any problems with thrashing the disk. Shouldn't do
+- RESULT: Not bothering with this for now. It's fast enough
+
+Try SURF features to improve recall
+-----------------------------------
+- Use SURF extractor instead of SIFT
+- Evaluate results with new script
+- RESULT: While it wasn't bad, wasn't impressive either. More errors to get same
+  recall value.
+- Need to compare with SIFT results to see if SURF is a good complement
+
+Tier results set to be less result e.g. remove distant / unreadable
+-------------------------------------------------------------------
+- Right now the riley set is pretty fucking hard
+- Remove or tier the difficult images so that more realistic and straightforward
+  examinations of error cases are possible
+
+Try edge features to improve recall
+-----------------------------------
+- Do sobel edge extraction then apply SIFT 
+- Perhaps by writing edge\_loader
 
 Write code to bound box the parking signs
 -----------------------------------------
