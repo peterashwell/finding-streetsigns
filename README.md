@@ -10,7 +10,8 @@
 - [x] Try SURF features to improve recall
 - [x] Try edge features to improve recall
 - [ ] Tier results set to be less result e.g. remove distant / unreadable
-- [x] write code to bound box the parking signs
+- [ ] Write code to segment the image preferring the parking signs
+- [ ] write code to bound box the parking signs
 - [ ] remove 'both' signs from training set (split)
 - [ ] try template matching to find sign boundaries
 - [ ] extract sign location and orientation using angular size and transform
@@ -78,6 +79,13 @@ Try edge features to improve recall
 - Try again with canny edge detection as a feature in the future, combined with
   template matching
 
+Write code to segment the image preferring parking signs
+--------------------------------------------------------
+- current best idea I have to get sign boundaries
+- signs should be easy to segment out - vote on the segments using the keypoints
+  to get sets of pixels covering (each) sign
+- Approach is first to use Canny -> Watershed -> basic voting scheme
+
 Write code to bound box the parking signs
 -----------------------------------------
 - Choose amongst matches which has most hits and produce homography
@@ -86,6 +94,8 @@ Write code to bound box the parking signs
 - Extract facing using skew and aspect of image
 - RESULT: Poor. Manual extraction of sign boundaries may be something I need to
   consider. Could also consider attempting template matching from the start
+- Try using Canny edge detection + segmentation. Assign to each segment the
+  matching sign from keypoint, or using a voting measure
 
 Extract sign location and orientation using angular size
 --------------------------------------------------------
