@@ -2,6 +2,7 @@ import cv2
 import os
 import sys
 import numpy as np
+from skimage import color
 
 
 EXPERIMENT_DIRECTORY = sys.argv[1]
@@ -28,37 +29,34 @@ def demo_segment(path):
             255,
             cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU
         )
-        cv2.imwrite('results/{0}_otsu.jpg'.format(base), thresh)
+        #cv2.imwrite('results/{0}_otsu.jpg'.format(base), thresh)
 
         edges = cv2.Canny(gray, 30, 200, apertureSize=5, L2gradient=True)
 
 #        kernel = np.array([
-#            [1, 1, 1, 1],
-#            [1, 1, 1, 1],
-#            [1, 1, 1, 1],
-#            [1, 1, 1, 1]
+#            [1, 1, 1],
+#            [1, 1, 1],
+#            [1, 1, 1],
 #        ])
-        closed = edges # cv2.morphologyEx(edges, cv2.MORPH_CLOSE, kernel)
-        cv2.imwrite('results/{0}_canny.jpg'.format(base), closed)
+        #cv2.imwrite('results/{0}_canny.jpg'.format(base), edges)
 
         orig_color = cv2.imread(os.path.join(path, f), 1)
-        color = orig_color.reshape((-1, 3))
+        lab = color.rgb2lab(orig_color)
 
-        color = np.float32(color)
+        lightness = lab[:, :, 0]
+        print('lightness max:', np.max(lightness))
+        print('lightness min:', np.min(lightness))
+        lightness[lightness < 60] = 0
+        lightness[lightness >= 60] = 255
+        lightness[edges > 1] = 0
+        cv2.imwrite('results/{0}_lightness.jpg'.format(base), lightness)
 
-        criteria = (
-            cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 10, 1.0
-        )
-        K = 8
-        ret, label, center = cv2.kmeans(
-            color, K, criteria, 10, cv2.KMEANS_RANDOM_CENTERS
-        )
-
-        center = np.uint8(center)
-        res = center[label.flatten()]
-        res2 = res.reshape((orig_color.shape))
-
-        cv2.imwrite('results/{0}_kmeans.jpg'.format(base), res2)
+        a_chan = lab[:, :, 1]
+        print('a min:', np.max(a_chan))
+        print('a max:', np.min(a_chan))
+        a_chan[a_chan < 15] = 0
+        a_chan[a_chan > 15] = 255
+        cv2.imwrite('results/{0}_achan.jpg'.format(base), a_chan)
 
 
 demo_segment(EXPERIMENT_DIRECTORY)
