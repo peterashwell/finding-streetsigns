@@ -44,8 +44,8 @@ for qnum, query_fname in enumerate(query_images):
 
     sift_query = sw.do_sift(query_image)
 
-    best = None
-    best_count = None
+    all_src_pts = []
+    all_dst_pts = []
     for train_fname in training_feature_map.keys():
         sift_train = training_feature_map[train_fname]
 
@@ -55,36 +55,33 @@ for qnum, query_fname in enumerate(query_images):
             print("matched: {0}".format(train_fname))
             training_hits += 1
             src_pts = np.float32(knn_result.source_points).reshape(-1, 1, 2)
+            train_height, train_width = training_image_map[train_fname].shape
+            train_height *= 1.0
+            train_width *= 1.0
+            print("train ratio:", train_height / train_width)
+            all_src_pts += [pt / train_width for pt in src_pts]
+            all_dst_pts += knn_result.destination_points
             dst_pts = np.float32(knn_result.destination_points).reshape(
                 -1, 1, 2
             )
-
-            if best is None or best_count > knn_result.num_found:
-                best_train_fname = train_fname
-                best = knn_result
-                best_count = knn_result.num_found
-                best_src_pts = src_pts
-                best_dst_pts = dst_pts
 
             for dst_pt in dst_pts:
                 cv2.circle(
                     output_image, tuple(dst_pt[0]), 5, (255, 255, 255), -1
                 )
 
-    if best and training_hits > 0:
+    if training_hits > 0:
         print("best match:", best_count)
-        print("source points:", best_src_pts)
-        print("dest points:", best_dst_pts)
+        all_src_pts = np.float32(all_src_pts).reshape(-1, 1, 2)
+        all_dst_pts = np.float32(all_dst_pts).reshape(-1, 1, 2)
         M, mask = cv2.findHomography(
-            best_src_pts, best_dst_pts, cv2.RANSAC, 5.0
+            all_src_pts, all_dst_pts, cv2.RANSAC, 5.0
         )
-        print("training image shape:", training_image_map[best_train_fname].shape)
-        h, w = training_image_map[best_train_fname].shape
         corners = [
             [0, 0],
-            [0, h-1],
-            [w-1, h-1],
-            [w-1, 0]
+            [0, 2.0],
+            [1.0, 2.0],
+            [1.0, 0]
         ]
 
         print("transform:", M)
