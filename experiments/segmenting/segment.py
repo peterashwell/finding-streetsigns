@@ -21,7 +21,7 @@ def demo_segment(path):
         gray = cv2.imread(os.path.join(path, f), 0)
         base = '.'.join(f.split('.')[:-1])
 
-        cv2.imwrite('results/{0}_gray.jpg'.format(base), gray)
+        #cv2.imwrite('results/{0}_gray.jpg'.format(base), gray)
 
         ret, thresh = cv2.threshold(
             gray,
@@ -56,7 +56,7 @@ def demo_segment(path):
         print('a max:', np.min(a_chan))
         a_chan[a_chan < 15] = 0
         a_chan[a_chan > 15] = 255
-        cv2.imwrite('results/{0}_achan.jpg'.format(base), a_chan)
+        #cv2.imwrite('results/{0}_achan.jpg'.format(base), a_chan)
 
 
 demo_segment(EXPERIMENT_DIRECTORY)
