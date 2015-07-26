@@ -11,11 +11,12 @@
 - [x] Try edge features to improve recall
 - [ ] Tier results set to be less result e.g. remove distant / unreadable
 - [ ] Write code to segment the image preferring the parking signs
-- [ ] write code to bound box the parking signs
-- [ ] remove 'both' signs from training set (split)
-- [ ] try template matching to find sign boundaries
+- [x] write code to bound box the parking signs
+- [x] try template matching to find sign boundaries
 - [ ] extract sign location and orientation using angular size and transform
 - [ ] try to bootstrap training set / get first plotted result
+- [ ] splitting up the set of SIFT matches into multiple signs
+- [ ] improve homographies by using estimateRigidTransform
 
 Improve training set to have types of signs + sources
 -----------------------------------------------------
@@ -109,3 +110,17 @@ Try to bootstrap training set / get first plotted result
 - Use bounded results to feed into training set with modifications
 - Modify code running on query set to extract headings, locations, etc
   of found sign. Plot these onto a map
+
+
+Improve homographies by using estimateRigidTransform
+----------------------------------------------------
+ - Use estimateRigidTransform to restrict mapping to affine only
+ - Works well, some crazy results have gone
+ - Will use instead of findHomography from now on
+
+Improve homographies by filtering SIFT matches
+----------------------------------------------
+ - Try to filter by using singular sign types
+ - Try to filter by simple clustering methods
+ - Try to filter by iterative improvement
+ - Try to filter by using segmentation

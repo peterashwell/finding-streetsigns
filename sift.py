@@ -11,8 +11,9 @@ from sift_wrapper import SiftWrapper
 from loaders import open_grayscale_image
 
 MIN_MATCH_COUNT = 3
+
 # Lower - more specifity for matches
-THRESHOLD = 0.6
+THRESHOLD = 0.4
 
 TRAINING_PATH = sys.argv[1]
 QUERY_PATH = sys.argv[2]
@@ -71,24 +72,27 @@ for qnum, query_fname in enumerate(query_images):
                 )
 
     if training_hits > 0:
-        print("best match:", best_count)
         all_src_pts = np.float32(all_src_pts).reshape(-1, 1, 2)
         all_dst_pts = np.float32(all_dst_pts).reshape(-1, 1, 2)
-        M, mask = cv2.findHomography(
-            all_src_pts, all_dst_pts, cv2.RANSAC, 5.0
-        )
-        corners = [
+        M = cv2.estimateRigidTransform(all_src_pts, all_dst_pts, False);
+        np.set_printoptions(formatter={'float': '{: 0.3f}'.format})
+        print('homography:\n', M)
+
+        # We shaped all the streetsigns in a 2:1 height:width size
+        # So this is the basis template for our homography
+        corners = np.array([
             [0, 0],
             [0, 2.0],
             [1.0, 2.0],
             [1.0, 0]
-        ]
+        ])
 
-        print("transform:", M)
-        pts = np.float32(corners).reshape(-1, 1, 2)
-        dst = cv2.perspectiveTransform(pts, M)
+        if M is not None:
+            M = np.vstack((M, np.array([0, 0, 1])))
+            pts = np.float32(corners).reshape(-1, 1, 2)
+            dst = cv2.perspectiveTransform(pts, M)
 
-        cv2.polylines(output_image, [np.int32(dst)], True, 255, 3)
+            cv2.polylines(output_image, [np.int32(dst)], True, 255, 3)
 
     if training_hits > 0:
         # Write each query image out with markers from training images
