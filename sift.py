@@ -82,8 +82,8 @@ for qnum, query_fname in enumerate(query_images):
         # So this is the basis template for our homography
         corners = np.array([
             [0, 0],
-            [0, 2.0],
-            [1.0, 2.0],
+            [0, 2.25],
+            [1.0, 2.25],
             [1.0, 0]
         ])
 
