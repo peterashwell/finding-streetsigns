@@ -10,10 +10,10 @@ import sys
 from sift_wrapper import SiftWrapper
 from loaders import open_grayscale_image
 
-MIN_MATCH_COUNT = 3
+MIN_MATCH_COUNT = 5
 
 # Lower - more specifity for matches
-THRESHOLD = 0.4
+THRESHOLD = 0.3
 
 TRAINING_PATH = sys.argv[1]
 QUERY_PATH = sys.argv[2]
@@ -74,7 +74,7 @@ for qnum, query_fname in enumerate(query_images):
     if training_hits > 0:
         all_src_pts = np.float32(all_src_pts).reshape(-1, 1, 2)
         all_dst_pts = np.float32(all_dst_pts).reshape(-1, 1, 2)
-        M = cv2.estimateRigidTransform(all_src_pts, all_dst_pts, False);
+        M = cv2.estimateRigidTransform(all_src_pts, all_dst_pts, False)
         np.set_printoptions(formatter={'float': '{: 0.3f}'.format})
         print('homography:\n', M)
 

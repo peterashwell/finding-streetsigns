@@ -9,14 +9,25 @@
 - [x] speed up classification with multiprocessing
 - [x] Try SURF features to improve recall
 - [x] Try edge features to improve recall
-- [ ] Tier results set to be less result e.g. remove distant / unreadable
+- [ ] Tier results set to be less optimistic e.g. remove distant / unreadable
 - [ ] Write code to segment the image preferring the parking signs
 - [x] write code to bound box the parking signs
 - [x] try template matching to find sign boundaries
 - [ ] extract sign location and orientation using angular size and transform
 - [ ] try to bootstrap training set / get first plotted result
 - [ ] splitting up the set of SIFT matches into multiple signs
-- [ ] improve homographies by using estimateRigidTransform
+- [x] improve homographies by using estimateRigidTransform
+- [ ] do complete finding of homography, remove region, and repeat
+- [ ] try to get more matches for no stopping and no parking by including error cases in training set
+- [ ] combine matches across alpha channel segmentation to get better results for no stopping
+- [ ] create a kippax dataset
+- [ ] filter out no-homography matches on riley and do an evaluation
+
+Improve homographies by using estimateRigidTransform
+----------------------------------------------------
+ - This restricts to affine transformations only
+ - It works! sort of... The wild homographies are cut out of computation
+ - Will use instead of findHomography in the future
 
 Improve training set to have types of signs + sources
 -----------------------------------------------------
