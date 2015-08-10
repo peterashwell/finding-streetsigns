@@ -22,9 +22,6 @@ RESULT_PATH = sys.argv[3]
 training_images = os.listdir(TRAINING_PATH)
 query_images = os.listdir(QUERY_PATH)
 
-one_train_image = training_images[2]
-one_query_image = query_images[13]
-
 sw = SiftWrapper()
 
 training_feature_map = {}
@@ -66,56 +63,87 @@ for qnum, query_fname in enumerate(query_images):
                 -1, 1, 2
             )
 
-            for dst_pt in dst_pts:
-                cv2.circle(
-                    output_image, tuple(dst_pt[0]), 5, (255, 255, 255), -1
-                )
-
-    print('src:', all_src_pts)
-    print('dst:', all_dst_pts)
+    #print('src:', all_src_pts)
+    #print('dst:', all_dst_pts)
 
     # We shaped all the streetsigns in a 2:1 height:width size
     # So this is the basis template for our homography
-    corners = np.array([
-        [0, 0],
-        [0, 2.25],
-        [1.0, 2.25],
-        [1.0, 0]
-    ])
-    template_corners = np.float32(corners).reshape(-1, 1, 2)
+    # Also, stretch it out a little to potentially include more matches
+    #
+    # (-0.1,-0.5) (1.1,-0.5)
+    #     +-----------+
+    #     |           |
+    #     |           |
+    #     |           |
+    #     |           |
+    #     |           |
+    #     |           |
+    #     |           |
+    #     |           |
+    #     |           |
+    #     +-----------+
+    # (-0.1,2.75) (1.1,2.75)
 
-    still_finding_signs = True
-    while still_finding_signs and len(all_dst_pts):
+    attempts = 3
+    while attempts and len(all_dst_pts):
+        print(all_src_pts)
+        print(all_dst_pts)
         from_template = np.float32(all_src_pts).reshape(-1, 1, 2)
         to_query_image = np.float32(all_dst_pts).reshape(-1, 1, 2)
 
-        print(from_template, to_query_image)
+        #print(from_template, to_query_image)
         M = cv2.estimateRigidTransform(from_template, to_query_image, False)
         np.set_printoptions(formatter={'float': '{: 0.3f}'.format})
         print('homography:\n', M)
 
+        normal_corners = np.array([
+            [0, 0],
+            [0, 2.25],
+            [1.0, 2.25],
+            [1.0, 0]
+        ])
+        stretched_corners = np.array([
+            [-0.05, -0.5],
+            [-0.05, 2.75],
+            [1.05, 2.75],
+            [1.05, -0.5]
+        ])
+        # Turn into vectors for matrix multiplication
+        normal_corners = np.float32(normal_corners).reshape(-1, 1, 2)
+        stretched_corners = np.float32(stretched_corners).reshape(-1, 1, 2)
+
         # We have found an affine transform
         if M is not None:
+            attempts -= 1
             # Fill out the perspective matrix with a dummy row
             M = np.vstack((M, np.array([0, 0, 1])))
-            sign_corners = cv2.perspectiveTransform(template_corners, M)
-            cv2.polylines(output_image, [np.int32(sign_corners)], True, 255, 3)
+            normal_corners = cv2.perspectiveTransform(normal_corners, M)
+            print('transform:', normal_corners);
+            stretched_corners = cv2.perspectiveTransform(stretched_corners, M)
+            cv2.polylines(output_image, [np.int32(normal_corners)], True, 255, 3)
 
             # Remove points we have already found as a sign and repeat
             new_all_dst_pts = []
             new_all_src_pts = []
             for index, point in enumerate(all_dst_pts):
                 # Check point is on or inside region of found sign (0 or +1)
-                if cv2.pointPolygonTest(sign_corners, point, True) < 0:
+                if cv2.pointPolygonTest(stretched_corners, point, True) < 0:
                     new_all_dst_pts.append(point)
                     new_all_src_pts.append(all_src_pts[index])
             all_dst_pts = new_all_dst_pts
             all_src_pts = new_all_src_pts
-
         else:
-            still_finding_signs = False
+            attempts = False
 
     if training_hits:
+        # Add points not matched to a homography
+        for dst_pt in all_dst_pts:
+            print('dst_pt:', dst_pt)
+            int_pt = tuple([int(x) for x in dst_pt])
+            cv2.circle(
+                output_image, int_pt, 5, (255, 255, 255), -1
+            )
+
         # Write each query image out with markers from training images
         # NOTE query_fname includes .jpg extension
         output_path = os.path.join(RESULT_PATH, query_fname)
