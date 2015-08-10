@@ -71,30 +71,51 @@ for qnum, query_fname in enumerate(query_images):
                     output_image, tuple(dst_pt[0]), 5, (255, 255, 255), -1
                 )
 
-    if training_hits > 0:
-        all_src_pts = np.float32(all_src_pts).reshape(-1, 1, 2)
-        all_dst_pts = np.float32(all_dst_pts).reshape(-1, 1, 2)
-        M = cv2.estimateRigidTransform(all_src_pts, all_dst_pts, False)
+    print('src:', all_src_pts)
+    print('dst:', all_dst_pts)
+
+    # We shaped all the streetsigns in a 2:1 height:width size
+    # So this is the basis template for our homography
+    corners = np.array([
+        [0, 0],
+        [0, 2.25],
+        [1.0, 2.25],
+        [1.0, 0]
+    ])
+    template_corners = np.float32(corners).reshape(-1, 1, 2)
+
+    still_finding_signs = True
+    while still_finding_signs and len(all_dst_pts):
+        from_template = np.float32(all_src_pts).reshape(-1, 1, 2)
+        to_query_image = np.float32(all_dst_pts).reshape(-1, 1, 2)
+
+        print(from_template, to_query_image)
+        M = cv2.estimateRigidTransform(from_template, to_query_image, False)
         np.set_printoptions(formatter={'float': '{: 0.3f}'.format})
         print('homography:\n', M)
 
-        # We shaped all the streetsigns in a 2:1 height:width size
-        # So this is the basis template for our homography
-        corners = np.array([
-            [0, 0],
-            [0, 2.25],
-            [1.0, 2.25],
-            [1.0, 0]
-        ])
-
+        # We have found an affine transform
         if M is not None:
+            # Fill out the perspective matrix with a dummy row
             M = np.vstack((M, np.array([0, 0, 1])))
-            pts = np.float32(corners).reshape(-1, 1, 2)
-            dst = cv2.perspectiveTransform(pts, M)
+            sign_corners = cv2.perspectiveTransform(template_corners, M)
+            cv2.polylines(output_image, [np.int32(sign_corners)], True, 255, 3)
 
-            cv2.polylines(output_image, [np.int32(dst)], True, 255, 3)
+            # Remove points we have already found as a sign and repeat
+            new_all_dst_pts = []
+            new_all_src_pts = []
+            for index, point in enumerate(all_dst_pts):
+                # Check point is on or inside region of found sign (0 or +1)
+                if cv2.pointPolygonTest(sign_corners, point, True) < 0:
+                    new_all_dst_pts.append(point)
+                    new_all_src_pts.append(all_src_pts[index])
+            all_dst_pts = new_all_dst_pts
+            all_src_pts = new_all_src_pts
 
-    if training_hits > 0:
+        else:
+            still_finding_signs = False
+
+    if training_hits:
         # Write each query image out with markers from training images
         # NOTE query_fname includes .jpg extension
         output_path = os.path.join(RESULT_PATH, query_fname)
