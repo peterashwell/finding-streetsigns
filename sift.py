@@ -6,6 +6,7 @@ import cv2
 import numpy as np
 import os
 import sys
+import copy
 
 from sift_wrapper import SiftWrapper
 from loaders import open_grayscale_image
@@ -13,8 +14,6 @@ from loaders import open_grayscale_image
 MIN_MATCH_COUNT = 5
 
 # Lower - more specifity for matches
-THRESHOLD = 0.3
-
 TRAINING_PATH = sys.argv[1]
 QUERY_PATH = sys.argv[2]
 RESULT_PATH = sys.argv[3]
@@ -59,9 +58,7 @@ for qnum, query_fname in enumerate(query_images):
             print("train ratio:", train_height / train_width)
             all_src_pts += [pt / train_width for pt in src_pts]
             all_dst_pts += knn_result.destination_points
-            dst_pts = np.float32(knn_result.destination_points).reshape(
-                -1, 1, 2
-            )
+            dst_pts = np.float32(knn_result.destination_points).reshape(-1, 1, 2)
 
     #print('src:', all_src_pts)
     #print('dst:', all_dst_pts)
@@ -85,14 +82,21 @@ for qnum, query_fname in enumerate(query_images):
     # (-0.1,2.75) (1.1,2.75)
 
     attempts = 3
-    while attempts and len(all_dst_pts):
-        print(all_src_pts)
-        print(all_dst_pts)
-        from_template = np.float32(all_src_pts).reshape(-1, 1, 2)
-        to_query_image = np.float32(all_dst_pts).reshape(-1, 1, 2)
+    train_matches = np.copy(all_src_pts)
+    query_matches = np.copy(all_dst_pts)
 
-        #print(from_template, to_query_image)
+    while attempts and len(query_matches):
+        if len(train_matches) < 4 and len(query_matches) < 4:
+            break
+        from_template = np.float32(train_matches).reshape(-1, 1, 2)
+        to_query_image = np.float32(query_matches).reshape(-1, 1, 2)
+
+        # Affine transform
         M = cv2.estimateRigidTransform(from_template, to_query_image, False)
+        if M is None:
+            M = cv2.findHomography(from_template, to_query_image, cv2.RANSAC, 5.0)[0]
+        else:
+            M = np.vstack((M, np.array([0, 0, 1])))
         np.set_printoptions(formatter={'float': '{: 0.3f}'.format})
         print('homography:\n', M)
 
@@ -116,33 +120,45 @@ for qnum, query_fname in enumerate(query_images):
         if M is not None:
             attempts -= 1
             # Fill out the perspective matrix with a dummy row
-            M = np.vstack((M, np.array([0, 0, 1])))
             normal_corners = cv2.perspectiveTransform(normal_corners, M)
-            print('transform:', normal_corners);
             stretched_corners = cv2.perspectiveTransform(stretched_corners, M)
             cv2.polylines(output_image, [np.int32(normal_corners)], True, 255, 3)
 
             # Remove points we have already found as a sign and repeat
-            new_all_dst_pts = []
-            new_all_src_pts = []
-            for index, point in enumerate(all_dst_pts):
+            new_query_matches = []
+            new_train_matches = []
+            for index, point in enumerate(query_matches):
                 # Check point is on or inside region of found sign (0 or +1)
-                if cv2.pointPolygonTest(stretched_corners, point, True) < 0:
-                    new_all_dst_pts.append(point)
-                    new_all_src_pts.append(all_src_pts[index])
-            all_dst_pts = new_all_dst_pts
-            all_src_pts = new_all_src_pts
+                tuplepoint = (point[0], point[1])
+                if cv2.pointPolygonTest(stretched_corners, tuplepoint, True) < 0:
+                    new_query_matches.append(point)
+                    new_train_matches.append(train_matches[index])
+            query_matches = new_query_matches
+            train_matches = new_train_matches
         else:
             attempts = False
 
     if training_hits:
         # Add points not matched to a homography
-        for dst_pt in all_dst_pts:
-            print('dst_pt:', dst_pt)
+        for dst_pt in query_matches:
             int_pt = tuple([int(x) for x in dst_pt])
-            cv2.circle(
-                output_image, int_pt, 5, (255, 255, 255), -1
-            )
+            cv2.circle(output_image, int_pt, 5, (255, 255, 255), -1)
+
+        # Plot match lines
+        # Pad output image to place where sign would be if it were there
+        fill = np.zeros(output_image.shape)
+        output_image = np.concatenate((output_image, fill), axis=1)
+
+        # Scale and shift matches so that they fit in the box
+        scale_factor = output_image.shape[1] / 2.25
+        shift_factor = output_image.shape[0]
+        for train, query in zip(all_src_pts, all_dst_pts):
+            train = np.int32(train[0] * scale_factor)
+            train[0] += shift_factor
+            train = (train[0], train[1])
+            query = (int(query[0]), int(query[1]))
+            #cv2.line( output_image, train, query, [255, 0, 0], 5)
+
 
         # Write each query image out with markers from training images
         # NOTE query_fname includes .jpg extension

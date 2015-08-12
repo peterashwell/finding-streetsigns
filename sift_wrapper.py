@@ -15,7 +15,7 @@ class SiftWrapper:
     FLANN_INDEX_KDTREE = 0
 
     # Distance threshold in knn to be considered a hit
-    KNN_DISTANCE_THRESHOLD = 0.6
+    KNN_DISTANCE_THRESHOLD = 0.5
 
     # K used in KNN matching
     KNN_MATCH_AMOUNT = 2
