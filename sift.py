@@ -146,8 +146,8 @@ for qnum, query_fname in enumerate(query_images):
 
         # Plot match lines
         # Pad output image to place where sign would be if it were there
-        fill = np.zeros(output_image.shape)
-        output_image = np.concatenate((output_image, fill), axis=1)
+        #fill = np.zeros(output_image.shape)
+        #output_image = np.concatenate((output_image, fill), axis=1)
 
         # Scale and shift matches so that they fit in the box
         scale_factor = output_image.shape[1] / 2.25
