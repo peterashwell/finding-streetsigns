@@ -4,6 +4,8 @@ import sys
 import numpy as np
 from skimage import color as skcolor
 
+from bisect import bisect_left
+
 
 EXPERIMENT_DIRECTORY = sys.argv[1]
 TRAINING_PATH = sys.argv[2]
@@ -18,6 +20,17 @@ MINIMUM_WIDTH = 30
 MAXIMUM_WIDTH = 80
 RATIO_HEIGHT_TO_WIDTH = 2.25
 
+SIGN_EDGE_RATIO = 0.1
+
+
+class Convolution:
+    def __init__(self, row, col, score, region, convolution):
+        self.row = row
+        self.col = col
+        self.score = score
+        self.region = region
+        self.convolution = convolution
+
 
 def open_grayscale_image(path):
     CV2_AS_GRAYSCALE = 0
@@ -26,74 +39,85 @@ def open_grayscale_image(path):
 
 
 def align_image_template(image, template):
+    image = np.copy(image)
+    template = np.copy(template)
     template_width = template.shape[1]
     template_height = template.shape[0]
+    template_count = np.float32(np.sum(template))
     col_slots = image.shape[1] - template.shape[1]
     row_slots = image.shape[0] - template.shape[0]
 
-    best_row = None
-    best_col = None
-    best_convol = None
-    best_slice = None
-    best_convol_img = None
+    bests = []
+    find_matrix = np.zeros_like(image)
+    found_threshold = template_width * template_height * 0.8
     for row in range(row_slots):
         for col in range(col_slots):
             img_slice = image[row: row + template_height, col: col + template_width]
+
             convol = np.multiply(img_slice, template)
-            convol_sum = np.sum(convol) / (1.0 * template_width + template_height)
-            do_replace = False
+            convol_sum = np.sum(convol) / template_count
 
-            if best_convol is None:
-                do_replace = True
-            if convol_sum > best_convol:
-                do_replace = True
-
-            if do_replace:
-                best_convol = convol_sum
-                best_row = row
-                best_col = col
-                best_slice = img_slice
-                best_convol_img = convol
-    return (best_row, best_col, best_convol, best_slice, best_convol_img)
+            scores = [c.score for c in bests]
+            bisect_point = bisect_left(scores, convol_sum)
+            bests.insert(bisect_point, Convolution(row, col, convol_sum, img_slice, convol))
+            if len(bests) > 10:
+                bests.pop(0)
+                if (bisect_point != 0):
+                    find_slice = find_matrix[row: row + template_height, col: col + template_width]
+                    find_slice += 1
+                    if len(np.where(find_slice >= 3)[0]) > found_threshold:
+                        img_slice[find_slice >= 3] = 0
+    return bests
 
 def get_segmented_images(allimagespath):
     signs = get_signshaped_rects_fixed()
     filenames = os.listdir(allimagespath)
-    for f in filenames[2:3]:
+    for f in filenames[0:10]:
         base = '.'.join(f.split('.')[:-1])
         fullimgpath = os.path.join(allimagespath, f)
-        segmented = segment_one_at_path(fullimgpath)
+        segmented, lightness, achan = segment_one_at_path(fullimgpath)
         color_query_image = cv2.imread(fullimgpath)
+
 
         #print('template shape:', scaled_template.shape[::-1])
         for matchnum, sign in enumerate(signs):
+            print('aligning:', sign, matchnum)
             #print('matching:', sign.depth(), 'to', segmented.depth())
             if sign.shape[0] >= segmented.shape[0] or sign.shape[1] >= segmented.shape[1]:
                 continue
             #matches = cv2.matchTemplate(
             #    np.float32(segmented), np.float32(sign), cv2.TM_CCORR_NORMED
             #)
-            best_convol = align_image_template(segmented, sign)
-            cv2.imwrite('bestconvols/{0}_template.jpg'.format(matchnum), sign * 255)
-            cv2.imwrite('bestconvols/{0}_bestslice.jpg'.format(matchnum), best_convol[3] * 255)
-            cv2.imwrite('bestconvols/{0}_bestconvol.jpg'.format(matchnum), best_convol[4] * 255)
-            print('best:', best_convol)
-            #if matches.max() < 0.70:
-            #    continue
-            tw, th = sign.shape
-            #pts = np.where(matches > 0.5)
-            #print('pts:', pts)
-            #print('value:', matches.max())
-            #for row in range(pts[0].shape[0]):
-            #    ptx = int(pts[0][row])
-            #    pty = int(pts[1][row])
-            #    tl = ptx + th
-            #    tr = pty + tw
-            ptx = best_convol[1]
-            pty = best_convol[0]
-            tl = ptx + sign.shape[1]
-            tr = pty + sign.shape[0]
-            cv2.rectangle(color_query_image, (ptx, pty), (tl, tr), (255, 0, 0), 2)
+            best_convols = align_image_template(segmented, sign)
+            for bcn, best_convol in enumerate(best_convols):
+                #cv2.imwrite('bestconvols/{1}{0}_template.jpg'.format(matchnum, bcn), sign * 255)
+                #cv2.imwrite('bestconvols/{1}{0}_bestslice.jpg'.format(matchnum, bcn), best_convol.region * 255)
+                #cv2.imwrite('bestconvols/{1}{0}_bestconvol.jpg'.format(matchnum, bcn), best_convol.convolution * 255)
+                #if matches.max() < 0.70:
+                #    continue
+                tw, th = sign.shape
+                #pts = np.where(matches > 0.5)
+                #print('pts:', pts)
+                #print('value:', matches.max())
+                #for row in range(pts[0].shape[0]):
+                #    ptx = int(pts[0][row])
+                #    pty = int(pts[1][row])
+                #    tl = ptx + th
+                #    tr = pty + tw
+
+                # Adjust to center the edge
+                ptx = best_convol.col
+                pty = best_convol.row
+                tl = ptx + sign.shape[1]
+                tr = pty + sign.shape[0]
+                lightness_or_achan = np.logical_or(lightness, achan)
+                candidate_slot = lightness_or_achan[pty: tr, ptx: tl]
+                #cv2.imwrite('bestconvols/{1}{0}_bestlora.jpg'.format(matchnum, bcn), candidate_slot * 255)
+                candidate_score = np.sum(candidate_slot) / (1.0 * sign.shape[0] * sign.shape[1])
+                #print('candidate score:', candidate_score)
+                if candidate_score > 0.5:
+                    cv2.rectangle(color_query_image, (ptx, pty), (tl, tr), (255, 0, 0), 2)
+        cv2.imwrite('results/{0}_lightnessorachan.jpg'.format(base), np.logical_or(lightness, achan) *255)
         cv2.imwrite('results/{0}_edges.jpg'.format(base), segmented*255)
         cv2.imwrite('results/{0}_template.jpg'.format(base), color_query_image)
 
@@ -106,7 +130,7 @@ def get_segmented_signs():
         gray = cv2.imread(image_path, 0)
         ratio = color.shape[0] / (1.0 * color.shape[1])
         print('loading training image:', image_path)
-        segmented = segment_one(gray, color)
+        segmented = segment_one(gray, color)[0]
         for desired_width in range(MINIMUM_WIDTH, 160, 10):
             desired_width = int(desired_width)
             desired_height = int(desired_width * ratio)
@@ -131,7 +155,7 @@ def get_signshaped_rects():
             desired_width = int(desired_width)
             desired_height = int(desired_width * ratio)
             template = np.ones((desired_height, desired_width))
-            bs = int(desired_width * 0.1)
+            bs = int(desired_width * SIGN_EDGE_RATIO)
             template[bs: -bs, bs: -bs] = 0
             segmented_signs.append(template)
             base = ''.join(train_fname.split('.')[:-1])
@@ -151,7 +175,6 @@ def get_signshaped_rects_fixed():
         segmented_signs.append(template)
         cv2.imwrite('segsigns/{0}.jpg'.format(sn), template*255)
     return segmented_signs
-
 
 
 def segment_one_at_path(imgpath):
@@ -181,7 +204,7 @@ def segment_one(gray, color):
     combined = np.multiply(combined, edges)
     combined = cv2.dilate(combined, kernel_22, iterations=4)
 
-    return combined
+    return combined, lightness, a_chan
 
 
 def demo_segment(path):
