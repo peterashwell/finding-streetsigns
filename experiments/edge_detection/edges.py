@@ -17,10 +17,11 @@ CANNY_MIN = 30
 CANNY_MAX = 200
 
 MINIMUM_WIDTH = 30
-MAXIMUM_WIDTH = 80
+MAXIMUM_WIDTH = 200
 RATIO_HEIGHT_TO_WIDTH = 2.25
 
 SIGN_EDGE_RATIO = 0.1
+SIGN_EDGE_AMOUNT = 5
 
 
 class Convolution:
@@ -48,34 +49,35 @@ def align_image_template(image, template):
     row_slots = image.shape[0] - template.shape[0]
 
     bests = []
-    find_matrix = np.zeros_like(image)
-    found_threshold = template_width * template_height * 0.8
+    #find_matrix = np.zeros_like(image)
+    #found_threshold = template_width * template_height * 0.8
     for row in range(row_slots):
         for col in range(col_slots):
             img_slice = image[row: row + template_height, col: col + template_width]
 
-            convol = np.multiply(img_slice, template)
-            convol_sum = np.sum(convol) / template_count
+            convol = np.logical_and(img_slice, template)
+            convol_sum = np.count_nonzero(convol) / template_count
 
             scores = [c.score for c in bests]
             bisect_point = bisect_left(scores, convol_sum)
             bests.insert(bisect_point, Convolution(row, col, convol_sum, img_slice, convol))
-            if len(bests) > 10:
+            if len(bests) > 500:
                 bests.pop(0)
-                if (bisect_point != 0):
-                    find_slice = find_matrix[row: row + template_height, col: col + template_width]
-                    find_slice += 1
-                    if len(np.where(find_slice >= 3)[0]) > found_threshold:
-                        img_slice[find_slice >= 3] = 0
+                #if (bisect_point != 0):
+                #    find_slice = find_matrix[row: row + template_height, col: col + template_width]
+                #    find_slice += 1
+                #    if len(np.where(find_slice >= 3)[0]) > found_threshold:
+                #       img_slice[find_slice >= 3] = 0
     return bests
+
 
 def get_segmented_images(allimagespath):
     signs = get_signshaped_rects_fixed()
     filenames = os.listdir(allimagespath)
-    for f in filenames[0:10]:
+    for f in filenames[0:2]:
         base = '.'.join(f.split('.')[:-1])
         fullimgpath = os.path.join(allimagespath, f)
-        segmented, lightness, achan = segment_one_at_path(fullimgpath)
+        segmented, lightness, achan, edges = edges_improved_at_path(fullimgpath)
         color_query_image = cv2.imread(fullimgpath)
 
 
@@ -88,11 +90,9 @@ def get_segmented_images(allimagespath):
             #matches = cv2.matchTemplate(
             #    np.float32(segmented), np.float32(sign), cv2.TM_CCORR_NORMED
             #)
-            best_convols = align_image_template(segmented, sign)
+            best_convols = align_image_template(edges, sign)
             for bcn, best_convol in enumerate(best_convols):
-                #cv2.imwrite('bestconvols/{1}{0}_template.jpg'.format(matchnum, bcn), sign * 255)
-                #cv2.imwrite('bestconvols/{1}{0}_bestslice.jpg'.format(matchnum, bcn), best_convol.region * 255)
-                #cv2.imwrite('bestconvols/{1}{0}_bestconvol.jpg'.format(matchnum, bcn), best_convol.convolution * 255)
+
                 #if matches.max() < 0.70:
                 #    continue
                 tw, th = sign.shape
@@ -112,10 +112,15 @@ def get_segmented_images(allimagespath):
                 tr = pty + sign.shape[0]
                 lightness_or_achan = np.logical_or(lightness, achan)
                 candidate_slot = lightness_or_achan[pty: tr, ptx: tl]
-                #cv2.imwrite('bestconvols/{1}{0}_bestlora.jpg'.format(matchnum, bcn), candidate_slot * 255)
                 candidate_score = np.sum(candidate_slot) / (1.0 * sign.shape[0] * sign.shape[1])
-                #print('candidate score:', candidate_score)
-                if candidate_score > 0.5:
+                print('candidate score:', candidate_score)
+                print('convol score:', best_convol.score)
+                cv2.rectangle(color_query_image, (ptx, pty), (tl, tr), (0, 255, 0), 2)
+                if candidate_score > 0.65:
+                    cv2.imwrite('bestconvols/{1}{0}_template.jpg'.format(matchnum, bcn), sign * 255)
+                    cv2.imwrite('bestconvols/{1}{0}_bestslice.jpg'.format(matchnum, bcn), best_convol.region * 255)
+                    cv2.imwrite('bestconvols/{1}{0}_bestconvol.jpg'.format(matchnum, bcn), best_convol.convolution * 255)
+                    cv2.imwrite('bestconvols/{1}{0}_bestlora.jpg'.format(matchnum, bcn), candidate_slot * 255)
                     cv2.rectangle(color_query_image, (ptx, pty), (tl, tr), (255, 0, 0), 2)
         cv2.imwrite('results/{0}_lightnessorachan.jpg'.format(base), np.logical_or(lightness, achan) *255)
         cv2.imwrite('results/{0}_edges.jpg'.format(base), segmented*255)
@@ -166,11 +171,12 @@ def get_signshaped_rects():
 def get_signshaped_rects_fixed():
     segmented_signs = []
     ratio = 2.25
-    for sn, desired_width in enumerate(range(MINIMUM_WIDTH, MAXIMUM_WIDTH, 5)):
+    ranges = range(25, 55, 4) # + range(50, 100, 7) + range(100, 200, 10)
+    for sn, desired_width in enumerate(ranges):
         desired_width = int(desired_width)
         desired_height = int(desired_width * ratio)
         template = np.ones((desired_height, desired_width))
-        bs = int(desired_width * 0.1)
+        bs = SIGN_EDGE_AMOUNT
         template[bs: -bs, bs: -bs] = 0
         segmented_signs.append(template)
         cv2.imwrite('segsigns/{0}.jpg'.format(sn), template*255)
@@ -204,7 +210,7 @@ def segment_one(gray, color):
     combined = np.multiply(combined, edges)
     combined = cv2.dilate(combined, kernel_22, iterations=4)
 
-    return combined, lightness, a_chan
+    return combined, lightness, a_chan, edges
 
 
 def demo_segment(path):
@@ -271,6 +277,59 @@ def demo_segment(path):
         cv2.imwrite('results/{0}_zkombined3.jpg'.format(base), combined * 255)
 
 
-#get_segmented_signs()
-#demo_segment(EXPERIMENT_DIRECTORY)
+def demo_edges_improved(path):
+    filenames = os.listdir(path)
+    for f in filenames:
+        base = '.'.join(f.split('.')[:-1])
+        combined, lightness, achan, edges, l, a, b, original = edges_improved_at_path(os.path.join(path, f))
+        #cv2.imwrite('tophat/{0}_1l.jpg'.format(base), l)
+        #cv2.imwrite('tophat/{0}_1a.jpg'.format(base), a)
+        #cv2.imwrite('tophat/{0}_1b.jpg'.format(base), b)
+        cv2.imwrite('tophat/{0}_original.jpg'.format(base), original)
+        cv2.imwrite('tophat/{0}_combined.jpg'.format(base), combined * 255)
+        cv2.imwrite('tophat/{0}_edges.jpg'.format(base), edges * 255)
+        #cv2.imwrite('tophat/{0}_labb.jpg'.format(base), lightness * 255)
+        #cv2.imwrite('tophat/{0}_laba.jpg'.format(base), achan * 255)
+
+
+def edges_improved_at_path(imgpath):
+    return edges_improved(cv2.imread(imgpath, 0), cv2.imread(imgpath, 1))
+
+
+def edges_improved(gray, color):
+    edges = cv2.Canny(gray, 1000, 2500, apertureSize=5, L2gradient=True)
+    edges[edges != 0] = 1
+    #kernel_22 = np.ones((2, 2), np.uint8)
+    #kernel_33 = np.ones((3, 3), np.uint8)
+
+    #h, s, v = cv2.split(cv2.cvtColor(color, cv2.COLOR_RGB2HSV))
+    l, a, b = cv2.split(cv2.cvtColor(color, cv2.COLOR_RGB2LAB))
+
+    # For white signs, set value as at least 50%, saturation at most 25%
+    white_mask = np.ones_like(gray)
+    white_mask[l <= 160] = 0
+    tinted_a = np.logical_or(a >= 145, a <= 110)
+    tinted_b = np.logical_or(b >= 145, b <= 110)
+    white_mask[np.logical_or(tinted_a, tinted_b)] = 0
+
+    red_mask = np.ones_like(gray)
+    red_mask[a <= 145] = 0
+
+    #combined[s != 0] = 1
+    #combined[v != 0] = 1
+    #combined = cv2.dilate(combined, kernel_33, iterations=3)
+    combined = np.logical_or(white_mask, red_mask)
+
+    #sign_kernel = np.ones((3, 3), np.uint8)
+    #combined = cv2.morphologyEx(white_mask, cv2.MORPH_OPEN, sign_kernel)
+
+    #combined = cv2.dilate(combined, kernel_22, iterations=3)
+    #combined = np.multiply(combined, edges)
+
+    kernel_22 = np.ones((2, 2))
+    edges = cv2.dilate(edges, kernel_22, iterations=3)
+
+    return combined, white_mask, red_mask, edges#, l, a, b, color
+
 get_segmented_images(EXPERIMENT_DIRECTORY)
+#demo_edges_improved(EXPERIMENT_DIRECTORY)
