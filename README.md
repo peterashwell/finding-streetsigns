@@ -10,18 +10,22 @@
 - [x] Try SURF features to improve recall
 - [x] Try edge features to improve recall
 - [ ] Tier results set to be less optimistic e.g. remove distant / unreadable
-- [ ] Write code to segment the image preferring the parking signs
+- [x] Write code to segment the image preferring the parking signs
 - [x] write code to bound box the parking signs
 - [x] try template matching to find sign boundaries
+- [x] improve homographies by using estimateRigidTransform
+- [x] do complete finding of homography, remove region, and repeat
+- [x] try to get more matches for no stopping and no parking by including error cases in training set
+- [ ] filter out no-homography matches on riley and do an evaluation
+- [ ] splitting up the set of SIFT matches into multiple signs
+- [ ] combine matches across alpha channel segmentation to get better results for no stopping
+- [ ] make training set for new style small signs, loading zones, bus zones
+- [ ] stretch top and bottom of match to include more points if it does
+- [ ] back up affine transform with homography
+- [ ] create a new training set using blobs on images rather than whole files
+- [ ] create a kippax dataset
 - [ ] extract sign location and orientation using angular size and transform
 - [ ] try to bootstrap training set / get first plotted result
-- [ ] splitting up the set of SIFT matches into multiple signs
-- [x] improve homographies by using estimateRigidTransform
-- [ ] do complete finding of homography, remove region, and repeat
-- [ ] try to get more matches for no stopping and no parking by including error cases in training set
-- [ ] combine matches across alpha channel segmentation to get better results for no stopping
-- [ ] create a kippax dataset
-- [ ] filter out no-homography matches on riley and do an evaluation
 
 Improve homographies by using estimateRigidTransform
 ----------------------------------------------------

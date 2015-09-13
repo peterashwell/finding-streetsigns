@@ -93,10 +93,10 @@ for qnum, query_fname in enumerate(query_images):
 
         # Affine transform
         M = cv2.estimateRigidTransform(from_template, to_query_image, False)
-        if M is None:
-            M = cv2.findHomography(from_template, to_query_image, cv2.RANSAC, 5.0)[0]
-        else:
+        if M is not None:
             M = np.vstack((M, np.array([0, 0, 1])))
+        #M = cv2.findHomography(from_template, to_query_image, cv2.RANSAC, 0.1)[0]
+
         np.set_printoptions(formatter={'float': '{: 0.3f}'.format})
         print('homography:\n', M)
 

@@ -7,15 +7,15 @@ class SiftWrapper:
     # Wrapper for OpenCV SIFT algorithm results
     SiftResult = namedtuple('SiftResult', ['keypoints', 'descriptors'])
     KnnResult = namedtuple(
-        'KnnResult',
-        ['num_found', 'source_points', 'destination_points']
+        'KnnResult', ['num_found', 'source_points', 'destination_points']
     )
 
     # Enum value for flann kdtree is 0
     FLANN_INDEX_KDTREE = 0
 
     # Distance threshold in knn to be considered a hit
-    KNN_DISTANCE_THRESHOLD = 0.5
+    # BIGGER = MORE PERMISSIVE
+    KNN_DISTANCE_THRESHOLD = 0.6
 
     # K used in KNN matching
     KNN_MATCH_AMOUNT = 2
@@ -48,8 +48,8 @@ class SiftWrapper:
         matches = self.flann.knnMatch(
             train.descriptors, query.descriptors, k=self.KNN_MATCH_AMOUNT
         )
-        for pair in matches:
-            a, b = pair
+        for match in matches:
+            a, b = match
             if a.distance < b.distance * self.KNN_DISTANCE_THRESHOLD:
                 matched_points.append(a)
 
