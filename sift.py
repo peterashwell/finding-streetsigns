@@ -49,15 +49,17 @@ for qnum, query_fname in enumerate(query_images):
         knn_result = sw.do_knn_sift(sift_train, sift_query)
 
         if knn_result.num_found > MIN_MATCH_COUNT:
-            print("matched: {0}".format(train_fname))
+            #print("matched: {0}".format(train_fname))
             training_hits += 1
             src_pts = np.float32(knn_result.source_points).reshape(-1, 1, 2)
             train_height, train_width = training_image_map[train_fname].shape
             train_height *= 1.0
             train_width *= 1.0
-            print("train ratio:", train_height / train_width)
+            #print("train ratio:", train_height / train_width)
             all_src_pts += [pt / train_width for pt in src_pts]
             all_dst_pts += knn_result.destination_points
+            for sm, dm in zip(all_src_pts, all_dst_pts):
+                print('[[{0},{1}],[{2},{3}]]'.format(sm[0][0], sm[0][1], dm[0], dm[1]))
             dst_pts = np.float32(knn_result.destination_points).reshape(-1, 1, 2)
 
     #print('src:', all_src_pts)

@@ -1,0 +1,6 @@
+ - Create training set of points used in matches and corresponding images
+ - Compute initial homographies from points using SVD
+ - Compute STE for all points to all homographies
+ - Do not use spatial smoothing and use levenberg-merquadt for one iteration using gco
+ - If it works, use spatial smoothing and see if there is improvement
+ - Repeat in iterations and great success!
