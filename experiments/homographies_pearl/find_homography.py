@@ -4,8 +4,10 @@ import cv2
 import glob
 import itertools
 import json
-from pygco import cut_from_graph
+import lmfit
 import numpy as np
+import os
+from pygco import cut_from_graph
 import random
 from scipy.spatial import Delaunay
 
@@ -91,6 +93,10 @@ def asymmetric_transfer_error(homography, pair):
     return first_d
 
 
+def reestimate_transform(transform, points):
+
+
+
 def find_homography(four_pairs):
     src, dst = split_src_dst(four_pairs)
     src = np.array(src)
@@ -136,7 +142,20 @@ def apply_pygco(transforms, pts):
     cnt = collections.Counter()
     for label in result:
         cnt[label] += 1
-    best_label = cnt.most_common(1)[0]
+    best_label = cnt.most_common(2)[0][0]
+    second_best_label = cnt.most_common(2)[1][0]
+
+    print 'best label', best_label, second_best_label
+    best_points = []
+    second_best_points = []
+    for index, label in enumerate(result):
+        if label == best_label:
+            best_points.append(pts[index])
+
+        elif label == second_best_label:
+            second_best_points.append(pts[index])
+
+    return (transforms[best_label - 1], transforms[second_best_label - 1], best_points, second_best_points)
 
 
 # Read file line by line, converting each to json
@@ -152,11 +171,46 @@ def handle_points(pts):
         if transform is not None:
             transforms.append(transform)
 
-    apply_pygco(transforms, pts)
     print 'done'
+    return apply_pygco(transforms, pts)
+
+
+def get_sign_transform(transform):
+    normal_corners = np.array([
+        [0, 0],
+        [0, 2.25],
+        [1.0, 2.25],
+        [1.0, 0]
+    ])
+
+    normal_corners = np.float32(normal_corners).reshape(-1, 1, 2)
+    normal_corners = cv2.perspectiveTransform(normal_corners, transform)
+    return np.int32([normal_corners])
 
 # Open each points file and read in matches
 for pts_file in glob.glob(POINTS_DIR):
     pts_lines = open(pts_file).read().strip().split('\n')
     pts = list(map(json.loads, pts_lines))
-    handle_points(pts)
+    best_transform, second_best_transform, best_points, second_best_points = handle_points(pts)
+
+    basename = os.path.splitext(os.path.basename(pts_file))[0]
+
+    imagepath = 'images/' + basename + '.jpg'
+    image = cv2.imread(imagepath)
+
+    print 'best transform', get_sign_transform(best_transform)
+    print 'second best transform', get_sign_transform(second_best_transform)
+    cv2.polylines(image, get_sign_transform(best_transform), True, 255, 3)
+    cv2.polylines(image, get_sign_transform(second_best_transform), True, 255, 3)
+
+    for pairs in best_points:
+        dst = pairs[1]
+        print 'dst', dst
+        cv2.circle(image, tuple([int(o) for o in dst]), 5, (0, 255, 0), -1)
+
+    for pairs in second_best_points:
+        dst = pairs[1]
+        print 'dst', dst
+        cv2.circle(image, tuple([int(o) for o in dst]), 5, (0, 0, 255), -1)
+
+    cv2.imwrite('results/' + basename + '.jpg', image)
