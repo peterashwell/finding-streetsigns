@@ -4,7 +4,7 @@ import cv2
 import glob
 import itertools
 import json
-import lmfit
+from lmfit import minimize, Parameter
 import numpy as np
 import os
 from pygco import cut_from_graph
@@ -12,8 +12,12 @@ import random
 from scipy.spatial import Delaunay
 
 POINTS_DIR = 'points/*'
-HOMOGRAPHY_SEEDS_AMT = 1000
-OUTLIER_DISTANCE = 500
+HOMOGRAPHY_SEEDS_AMT = 3000
+OUTLIER_DISTANCE = 50
+LARGE_DISTANCE = 10000
+DELAUNAY_WEIGHTING = 1
+REPROJECTION_WEIGHTING = 1
+PAIRWISE_WEIGHTING = -1
 
 
 def random_combination(iterable, how_many, in_each):
@@ -60,7 +64,7 @@ def triangulate_query(all_pairs):
         next_point = dst[next_vertex]
 
         distance = np.linalg.norm(point - next_point)
-        edges.append((vertex, next_vertex, int(distance)))
+        edges.append((vertex, next_vertex, DELAUNAY_WEIGHTING * int(distance)))
         #edges.append((vertex, next_vertex))
 
     return np.array(edges).astype(np.int32)
@@ -79,7 +83,7 @@ def asymmetric_transfer_error(homography, pair):
     first_t = np.dot(homography, first)
 
     if first_t[2] < np.finfo(np.float32).eps:
-        return OUTLIER_DISTANCE
+        return LARGE_DISTANCE
 
     # Set z=1 on homogeneous coords after transform
     first_t /= first_t[2]
@@ -88,13 +92,42 @@ def asymmetric_transfer_error(homography, pair):
     first_d = np.linalg.norm(first_t - second)
 
     if np.isnan(first_d):
-        return OUTLIER_DISTANCE
+        return LARGE_DISTANCE
 
     return first_d
 
 
-def reestimate_transform(transform, points):
 
+def reestimate_transform(transform, points):
+    # Define objective as function of all points above and current transform (params)
+    def objective(params):
+        # Build array of homography parameters and reshape
+        params_dict = params.valuesdict()
+        unpacked = np.array([
+            params_dict['val' + str(i)]
+            for i in xrange(0, 9)
+        ])
+        unoptimized_transform = unpacked.reshape(3, 3)
+        # Compute reprojection error across all points
+        reprojection_distances = [
+            asymmetric_transfer_error(unoptimized_transform, p) for p in points
+        ]
+        #return reprojection_distances
+        return sum(reprojection_distances)
+
+    # Create parameters from initial transform by flattening and building dict
+    parameter_list = transform.flatten().tolist()
+
+    parameters = [
+        Parameter('val' + str(i), value=val)
+        for i, val in enumerate(parameter_list)
+    ]
+
+    # Run and return optimized parameters for reprojection error
+    minimize(objective, parameters, method='nelder')
+
+    unpacked = np.array([ p.value for p in parameters ])
+    return unpacked.reshape(3, 3)
 
 
 def find_homography(four_pairs):
@@ -115,7 +148,7 @@ def compile_transfer_errors(transforms, pts):
     for pair in pts:
         row = []
         for transform in transforms:
-            row.append(int(round(asymmetric_transfer_error(transform, pair))))
+            row.append(REPROJECTION_WEIGHTING * int(round(asymmetric_transfer_error(transform, pair))))
         per_model_errors.append(row)
     return np.array(per_model_errors).astype(np.int32)
 
@@ -125,7 +158,7 @@ def apply_pygco(transforms, pts):
     unaries = compile_transfer_errors(transforms, pts)
     # Outlier label
     unaries = np.insert(unaries, 0, OUTLIER_DISTANCE, axis=1)
-    pairwise = -1 * np.eye(len(transforms) + 1).astype(np.int32)
+    pairwise = PAIRWISE_WEIGHTING * np.eye(len(transforms) + 1).astype(np.int32)
 
     print 'edges', edges.shape
     print 'unaries', unaries.shape
@@ -200,8 +233,14 @@ for pts_file in glob.glob(POINTS_DIR):
 
     print 'best transform', get_sign_transform(best_transform)
     print 'second best transform', get_sign_transform(second_best_transform)
+
     cv2.polylines(image, get_sign_transform(best_transform), True, 255, 3)
     cv2.polylines(image, get_sign_transform(second_best_transform), True, 255, 3)
+
+    improved_best = reestimate_transform(np.copy(best_transform), best_points)
+    improved_second_best = reestimate_transform(np.copy(second_best_transform), second_best_points)
+    cv2.polylines(image, get_sign_transform(improved_best), True, (0, 255, 255), 1)
+    cv2.polylines(image, get_sign_transform(improved_second_best), True, (0, 255, 255), 1)
 
     for pairs in best_points:
         dst = pairs[1]
