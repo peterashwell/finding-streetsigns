@@ -6,14 +6,15 @@ import itertools
 import json
 from lmfit import minimize, Parameter
 import numpy as np
+from operator import itemgetter
 import os
 from pygco import cut_from_graph
 import random
 from scipy.spatial import Delaunay
 
 POINTS_DIR = 'points/*'
-HOMOGRAPHY_SEEDS_AMT = 3000
-OUTLIER_DISTANCE = 50
+HOMOGRAPHY_SEEDS_AMT = 5000
+OUTLIER_DISTANCE = 100
 LARGE_DISTANCE = 10000
 DELAUNAY_WEIGHTING = 1
 REPROJECTION_WEIGHTING = 1
@@ -97,16 +98,18 @@ def asymmetric_transfer_error(homography, pair):
     return first_d
 
 
-
 def reestimate_transform(transform, points):
     # Define objective as function of all points above and current transform (params)
     def objective(params):
         # Build array of homography parameters and reshape
         params_dict = params.valuesdict()
+
+        # Keep transform affine
         unpacked = np.array([
             params_dict['val' + str(i)]
-            for i in xrange(0, 9)
+            for i in xrange(0, 6)
         ])
+        unpacked = np.hstack((unpacked, np.array([0, 0, 1])))
         unoptimized_transform = unpacked.reshape(3, 3)
         # Compute reprojection error across all points
         reprojection_distances = [
@@ -124,23 +127,26 @@ def reestimate_transform(transform, points):
     ]
 
     # Run and return optimized parameters for reprojection error
-    minimize(objective, parameters, method='nelder')
+    minimize(objective, parameters[:6], method='nelder')
 
     unpacked = np.array([ p.value for p in parameters ])
+    print 'unpacked:', unpacked
     return unpacked.reshape(3, 3)
 
 
 def find_homography(four_pairs):
     src, dst = split_src_dst(four_pairs)
-    src = np.array(src)
-    dst = np.array(dst)
-    transform = cv2.findHomography(src, dst, False)
-
-    try:
-        np.linalg.inv(transform[0])
-    except:
+    src = np.float32(np.array(src)).reshape(-1, 1, 2)
+    dst = np.float32(np.array(dst)).reshape(-1, 1, 2)
+    print 'src:', src
+    print 'dst:', src
+    transform = cv2.estimateRigidTransform(src, dst, False)
+    if transform is None:
         return None
-    return transform[0]
+    transform = np.vstack((transform, np.array([0, 0, 1])))
+    print 'rigid transform:', transform
+
+    return transform
 
 
 def compile_transfer_errors(transforms, pts):
@@ -160,6 +166,7 @@ def apply_pygco(transforms, pts):
     unaries = np.insert(unaries, 0, OUTLIER_DISTANCE, axis=1)
     pairwise = PAIRWISE_WEIGHTING * np.eye(len(transforms) + 1).astype(np.int32)
 
+    '''
     print 'edges', edges.shape
     print 'unaries', unaries.shape
     print 'transforms', pairwise.shape
@@ -167,6 +174,7 @@ def apply_pygco(transforms, pts):
     print 'edges', edges
     print 'unaries', unaries
     print 'transforms', pairwise
+    '''
 
     result = cut_from_graph(edges, unaries, pairwise)
 
@@ -175,10 +183,16 @@ def apply_pygco(transforms, pts):
     cnt = collections.Counter()
     for label in result:
         cnt[label] += 1
-    best_label = cnt.most_common(2)[0][0]
-    second_best_label = cnt.most_common(2)[1][0]
 
-    print 'best label', best_label, second_best_label
+    # While the best label is an outlier label (not a good sign to start)
+    counted_items = cnt.items()
+    not_outlier = list(sorted(filter(lambda x: x[0] != 0, cnt.items()), key=itemgetter(1), reverse=True))
+
+    print 'not outlier:', not_outlier
+
+    best_label = not_outlier[0][0]
+    second_best_label = not_outlier[1][0]
+
     best_points = []
     second_best_points = []
     for index, label in enumerate(result):
@@ -188,7 +202,13 @@ def apply_pygco(transforms, pts):
         elif label == second_best_label:
             second_best_points.append(pts[index])
 
-    return (transforms[best_label - 1], transforms[second_best_label - 1], best_points, second_best_points)
+    best_points_scores = []
+    second_best_points_scores = []
+
+    best_points_scores = unaries[:, best_label].tolist()
+    second_best_points_scores = unaries[:, second_best_label].tolist()
+
+    return (transforms[best_label - 1], transforms[second_best_label - 1], best_points, second_best_points, best_points_scores, second_best_points_scores)
 
 
 # Read file line by line, converting each to json
@@ -204,7 +224,6 @@ def handle_points(pts):
         if transform is not None:
             transforms.append(transform)
 
-    print 'done'
     return apply_pygco(transforms, pts)
 
 
@@ -224,7 +243,8 @@ def get_sign_transform(transform):
 for pts_file in glob.glob(POINTS_DIR):
     pts_lines = open(pts_file).read().strip().split('\n')
     pts = list(map(json.loads, pts_lines))
-    best_transform, second_best_transform, best_points, second_best_points = handle_points(pts)
+
+    best_transform, second_best_transform, best_points, second_best_points, best_scores, second_scores = handle_points(pts)
 
     basename = os.path.splitext(os.path.basename(pts_file))[0]
 
@@ -233,6 +253,9 @@ for pts_file in glob.glob(POINTS_DIR):
 
     print 'best transform', get_sign_transform(best_transform)
     print 'second best transform', get_sign_transform(second_best_transform)
+
+    print 'best_scores', best_scores
+    print 'second_scores', second_scores
 
     cv2.polylines(image, get_sign_transform(best_transform), True, 255, 3)
     cv2.polylines(image, get_sign_transform(second_best_transform), True, 255, 3)
