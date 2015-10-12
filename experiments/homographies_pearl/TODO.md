@@ -7,7 +7,7 @@ Part One: Does it work at all
  - [x] If it works, use spatial smoothing and see if there is improvement
 
  Part Two: Why are there weird errors, iterations, and improvement
- - [ ] Try using affine transforms only from seeds
+ - [x] Try using affine transforms only from seeds
  - [ ] Discard outliers from models once found
  - [ ] Instead of just reprojection error, use homography healthyness
  - [ ] Experiment with the distance features to be stronger

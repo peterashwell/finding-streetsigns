@@ -99,7 +99,17 @@ def asymmetric_transfer_error(homography, pair):
 
 
 def reestimate_transform(transform, points):
+    src, dst = split_src_dst(points)
+    src = np.float32(np.array(src)).reshape(-1, 1, 2)
+    dst = np.float32(np.array(dst)).reshape(-1, 1, 2)
+    transform = cv2.estimateRigidTransform(src, dst, False)
+    if transform is None:
+        return None
+    transform = np.vstack((transform, np.array([0, 0, 1])))
+
+    return transform
     # Define objective as function of all points above and current transform (params)
+    '''
     def objective(params):
         # Build array of homography parameters and reshape
         params_dict = params.valuesdict()
@@ -130,16 +140,14 @@ def reestimate_transform(transform, points):
     minimize(objective, parameters[:6], method='nelder')
 
     unpacked = np.array([ p.value for p in parameters ])
-    print 'unpacked:', unpacked
     return unpacked.reshape(3, 3)
+    '''
 
 
 def find_homography(four_pairs):
     src, dst = split_src_dst(four_pairs)
     src = np.float32(np.array(src)).reshape(-1, 1, 2)
     dst = np.float32(np.array(dst)).reshape(-1, 1, 2)
-    print 'src:', src
-    print 'dst:', src
     transform = cv2.estimateRigidTransform(src, dst, False)
     if transform is None:
         return None
